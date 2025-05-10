@@ -31,18 +31,20 @@ public class UserController {
         }
     }
 
-    // Login a user by email and password
+ // Login a user by email and password
     @POST
     @Path("/login")
     public Response login(User loginUser) {
-        User user = userService.login(loginUser.getEmail(), loginUser.getPassword());
-        if (user != null) {
-            return Response.ok(user).build();
+        UserDTO userDTO = userService.login(loginUser.getEmail(), loginUser.getPassword());
+        if (userDTO != null) {
+            return Response.ok(userDTO).build(); // Return the DTO instead of the full entity
         } else {
             return Response.status(Response.Status.UNAUTHORIZED)
-                           .entity("{\"message\":\"Invalid credentials\"}").build();
+                           .entity("{\"message\":\"Invalid credentials\"}")
+                           .build();
         }
     }
+
 
     // Update profile of a user by ID
     @PUT

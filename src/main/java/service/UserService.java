@@ -23,8 +23,8 @@ public class UserService {
         em.persist(user);  // Persist user to the database
     }
 
-    // Login a user by verifying email and password
-    public User login(String email, String password) {
+ // Login a user by verifying email and password
+    public UserDTO login(String email, String password) {
         try {
             // Fetch user by email
             User user = em.createQuery("SELECT u FROM User u WHERE u.email = :email", User.class)
@@ -32,8 +32,8 @@ public class UserService {
                           .getSingleResult();
 
             // Check if the password matches
-            if (user.getPassword().equals(password)) {  
-                return user;
+            if (user.getPassword().equals(password)) {
+                return new UserDTO(user);  // Return the DTO instead of the full User entity
             } else {
                 return null;
             }

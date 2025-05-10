@@ -4,6 +4,9 @@ import DTO.CreateGroupPostDTO;
 import DTO.GroupDTO;
 import DTO.GroupPostDTO;
 import DTO.GroupRequestDTO;
+import DTO.LeaveGroupDTO;
+import DTO.LeaveGroupResponse;
+import DTO.UserDTO;
 import Entity.GroupPosts;
 import Entity.GroupRequest;
 import Entity.GroupRequest.MembershipStatus;
@@ -39,45 +42,60 @@ public class GroupService {
         return new GroupRequestDTO(request);
     }
 
-    public void leaveGroup(User user, Groups grp) {
-        Groups managedGroup = em.find(Groups.class, grp.getGroupId());
-        User managedUser = em.find(User.class, user.getId());
+ // In your service class
+    public LeaveGroupResponse leaveGroup(int userId, int groupId) {
+        Groups group = em.find(Groups.class, groupId);
+        User user = em.find(User.class, userId);
 
-        // Removed security checks; anyone can leave the group
-        managedGroup.getMembers().remove(managedUser);
-        if (managedUser.getRole().equals("Admin")) {
-            managedGroup.getAdmins().remove(managedUser);
+        if (group == null || user == null) {
+            throw new IllegalArgumentException("User or Group not found.");
         }
 
-        em.merge(managedGroup);
+        group.getMembers().remove(user);
+        group.getAdmins().remove(user); // Safe even if not an admin
+
+        em.merge(group);
+
+        String message = "User " + user.getId() + " left group " + group.getGroupId();
+        return new LeaveGroupResponse(message, new UserDTO(user));
     }
- // Create a group post
+
+
     public GroupPostDTO createGroupPost(CreateGroupPostDTO dto, int userId, int groupId) {
-        // طباعة الـ ID المستخدم علشان نتأكد من إنه جاي صح
         System.out.println("Looking for user with ID: " + userId);
-        User user = em.find(User.class, userId); // محاولة الحصول على المستخدم
+        User user = em.find(User.class, userId); // Attempt to fetch the user
         System.out.println("User found: " + (user != null));
 
         System.out.println("Looking for group with ID: " + groupId);
-        Groups group = em.find(Groups.class, groupId); // محاولة الحصول على المجموعة
+        Groups group = em.find(Groups.class, groupId); // Attempt to fetch the group
         System.out.println("Group found: " + (group != null));
 
-        // لو المستخدم أو المجموعة مش موجودين، هنطلع استثناء
-        if (user == null || group == null) {
-            String errorMessage = "User or Group not found";
-            System.out.println(errorMessage); // هنا هنضيف لوج في حالة حدوث الخطأ
-            throw new IllegalArgumentException(errorMessage); // رمي استثناء برسالة واضحة
+        if (user == null && group == null) {
+            String errorMessage = "Both User and Group not found";
+            System.out.println(errorMessage);
+            throw new IllegalArgumentException(errorMessage); // Throwing exception if both are not found
         }
 
-        // لو كل شيء تمام، هنكمل عملية إنشاء البوست
+        if (user == null) {
+            String errorMessage = "User with ID " + userId + " not found";
+            System.out.println(errorMessage);
+            throw new IllegalArgumentException(errorMessage); // Throwing exception if user is not found
+        }
+
+        if (group == null) {
+            String errorMessage = "Group with ID " + groupId + " not found";
+            System.out.println(errorMessage);
+            throw new IllegalArgumentException(errorMessage); // Throwing exception if group is not found
+        }
+
         GroupPosts post = new GroupPosts();
         post.setPostingUser(user);
         post.setGroup(group);
         post.setContent(dto.getContent());
-        post.setTimestamp(new java.util.Date()); // تعيين الوقت الحالي
+        post.setTimestamp(new java.util.Date()); // Set the current timestamp
 
-        em.persist(post); // حفظ البوست في قاعدة البيانات
-        return new GroupPostDTO(post); // إرجاع الكائن المُحول
+        em.persist(post); // Save the post in the database
+        return new GroupPostDTO(post); // Return the created post as a DTO
     }
 
 

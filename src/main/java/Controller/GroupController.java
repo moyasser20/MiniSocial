@@ -4,6 +4,8 @@ import DTO.CreateGroupPostDTO;
 import DTO.GroupDTO;
 import DTO.GroupPostDTO;
 import DTO.GroupRequestDTO;
+import DTO.LeaveGroupDTO;
+import DTO.LeaveGroupResponse;
 import Entity.Groups;
 import Entity.User;
 import service.GroupService;
@@ -41,32 +43,35 @@ public class GroupController {
 
     @POST
     @Path("/leave")
-    public Response leaveGroup(@QueryParam("groupId") int groupId, @QueryParam("userId") int userId) {
-        User user = new User(); user.setId(userId);
-        Groups group = new Groups(); group.setGroupId(groupId);
-        grpService.leaveGroup(user, group);
-        return Response.ok("Left group").build();
-       
-    }	
+    public Response leaveGroup(@QueryParam("userId") int userId, @QueryParam("groupId") int groupId) {
+        try {
+            LeaveGroupResponse response = grpService.leaveGroup(userId, groupId);
+            return Response.ok(response).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                           .entity("{\"error\": \"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+
     @POST
     @Path("/post")
     public Response createGroupPost(@QueryParam("userId") int userId,
             @QueryParam("groupId") int groupId,
             CreateGroupPostDTO dto) {
         try {
-            // محاولة إنشاء البوست
+            // Attempt to create the post
             GroupPostDTO created = grpService.createGroupPost(dto, userId, groupId);
-            return Response.ok(created).build(); // إرجاع النتيجة
+            return Response.ok(created).build(); // Return the created post as a response
         } catch (IllegalArgumentException e) {
-            // إذا كان في مشكلة في وجود المستخدم أو المجموعة
-            System.out.println("Error: " + e.getMessage()); // طباعة الخطأ في الكونسول
+            // If there is an issue with user or group existence
+            System.out.println("Error: " + e.getMessage()); // Log the error message
             return Response.status(Response.Status.NOT_FOUND)
-                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build(); // إرجاع رد خطأ
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();  // Return the error in response
         } catch (Exception e) {
-            // التعامل مع الأخطاء الأخرى غير المتوقعة
-            e.printStackTrace(); // طباعة الاستثناء
+            e.printStackTrace(); // Print the stack trace for unexpected errors
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\":\"An internal server error occurred\"}").build(); // إرجاع رد خطأ داخلي
+                    .entity("{\"error\":\"An internal server error occurred\"}").build(); // Return internal server error response
         }
     }
 
